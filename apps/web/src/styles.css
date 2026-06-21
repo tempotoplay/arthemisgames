@@ -1,0 +1,147 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: #140c20;
+  color: #e8e0f5;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.boot {
+  color: #9db5a3;
+  text-align: center;
+  opacity: 0.85;
+  font-size: 14px;
+  padding: 48px;
+}
+
+/* ---- gallery -------------------------------------------------------------- */
+.gallery {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 64px 24px 48px;
+}
+
+.gallery__header h1 {
+  font-size: 40px;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.gallery__header p {
+  margin: 0 0 40px;
+  color: #b9adcf;
+}
+
+.gallery__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px;
+  border-radius: 16px;
+  background: #1e1431;
+  border: 1px solid #2c2046;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.card__bar {
+  display: block;
+  width: 44px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  margin-bottom: 18px;
+}
+
+.card__title {
+  font-size: 22px;
+  margin: 0 0 10px;
+}
+
+.card__desc {
+  margin: 0 0 20px;
+  color: #b9adcf;
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.card__play {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.gallery__footer {
+  margin-top: 48px;
+  color: #6c5f86;
+  font-size: 13px;
+}
+
+/* ---- game screen ---------------------------------------------------------- */
+.game-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-screen__nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #0e0817;
+  border-bottom: 1px solid #2c2046;
+}
+
+.game-screen__back {
+  text-decoration: none;
+  font-weight: 600;
+  color: #b9adcf;
+}
+
+.game-screen__back:hover {
+  color: #fff;
+}
+
+.game-screen__title {
+  color: #6c5f86;
+  font-size: 14px;
+}
+
+.game-screen__stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
