@@ -1,0 +1,3 @@
+# GitHub Pages config for SPA routing fallback
+# When a path doesn't exist, Pages serves 404.html instead of an error.
+# This allows client-side routers (like React Router) to handle all routes.

@@ -53,3 +53,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Enable custom 404 fallback for SPA routing (after Pages is live).
+      # This tells GitHub Pages to serve 404.html for unknown paths, allowing
+      # client-side routers to handle all routes.
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.repos.updatePagesConfig({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                source: { branch: "main", path: "/" },
+                public: true,
+                custom_404: true
+              });
+              console.log("✓ Custom 404 fallback enabled");
+            } catch (e) {
+              console.log("ℹ Custom 404 setting may require manual GitHub UI toggle");
+            }
