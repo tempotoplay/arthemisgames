@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { attachTouchInput, drawTouchZones } from "../touch-input";
 
 /**
  * Carousel Duck Shoot
@@ -249,6 +250,7 @@ export default function CarouselDuckShoot() {
   }
 
   useEffect(() => {
+    const isTouchDevice = () => "ontouchstart" in window;
     const canvas = canvasRef.current;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = W * dpr;
@@ -303,6 +305,44 @@ export default function CarouselDuckShoot() {
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+
+    // ---- touch input -------------------------------------------------------
+    let cleanupTouch = () => {};
+
+    if (isTouchDevice() && canvas) {
+      const touchZones = [
+        { name: "◄", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
+        { name: "►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
+      ];
+      const fireZone = { x: W / 3, y: H * 0.6, w: W / 3, h: H * 0.4 };
+      let touchCleanup = attachTouchInput({
+        canvas,
+        zones: touchZones,
+        onZoneChange: (update) => {
+          Object.assign(g.keys, update);
+        },
+      });
+
+      // Fire zone: tap to fire, don't hold.
+      const handleFireTap = (e) => {
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        for (const touch of e.changedTouches) {
+          const x = touch.clientX - rect.left;
+          const y = touch.clientY - rect.top;
+          if (x >= fireZone.x && x < fireZone.x + fireZone.w && y >= fireZone.y && y < fireZone.y + fireZone.h) {
+            fire();
+          }
+        }
+      };
+      canvas.addEventListener("touchstart", handleFireTap, { passive: true });
+
+      cleanupTouch = () => {
+        touchCleanup();
+        canvas.removeEventListener("touchstart", handleFireTap);
+      };
+    }
+
 
     // ---- update ------------------------------------------------------------
     const update = (dt, now) => {
@@ -750,6 +790,16 @@ export default function CarouselDuckShoot() {
       drawBullets();
       drawGunAndSights();
       ctx.restore();
+
+      // Draw touch zones if on a touch device
+      if (isTouchDevice() && started && !hud.roundOver) {
+        const touchZones = [
+          { name: "◄", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
+          { name: "►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
+          { name: "FIRE", keyName: "fire", x: W / 3, y: H * 0.6, w: W / 3, h: H * 0.4 },
+        ];
+        drawTouchZones(ctx, touchZones, { filled: true, alpha: 0.08 });
+      }
     };
 
     // ---- HUD sync (throttled) ---------------------------------------------
@@ -796,6 +846,7 @@ export default function CarouselDuckShoot() {
       cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      cleanupTouch();
     };
   }, [started]);
 

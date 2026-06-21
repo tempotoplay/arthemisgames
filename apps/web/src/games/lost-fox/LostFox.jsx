@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { attachTouchInput, drawTouchZones } from "../touch-input";
 
 /**
  * Lost Fox — a self-localization (orienteering) game.
@@ -215,6 +216,7 @@ export default function LostFox() {
   }
 
   useEffect(() => {
+    const isTouchDevice = () => "ontouchstart" in window;
     const view = viewRef.current, map = mapRef.current;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     for (const [c, w, h] of [[view, VW, VH], [map, MW, MH]]) {
@@ -244,6 +246,23 @@ export default function LostFox() {
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+
+    // ---- touch input -------------------------------------------------------
+    let cleanupTouch = () => {};
+
+    if (isTouchDevice() && view) {
+      const touchZones = [
+        { name: "←", keyName: "l", x: 0, y: VH - 60, w: 60, h: 60 },
+        { name: "→", keyName: "r", x: VW - 60, y: VH - 60, w: 60, h: 60 },
+        { name: "↑", keyName: "f", x: 30, y: 0, w: VW - 60, h: 60 },
+      ];
+      cleanupTouch = attachTouchInput({
+        canvas: view,
+        zones: touchZones,
+        onZoneChange: (update) => Object.assign(g.keys, update),
+      });
+    }
+
 
     // click the map to set a position guess
     const onMapClick = (e) => {
@@ -491,6 +510,17 @@ export default function LostFox() {
       if (started) update(dt);
       renderView();
       renderMap();
+
+      // Draw touch zones if on a touch device
+      if (isTouchDevice() && started) {
+        const touchZones = [
+          { name: "←", keyName: "l", x: 0, y: VH - 60, w: 60, h: 60 },
+          { name: "→", keyName: "r", x: VW - 60, y: VH - 60, w: 60, h: 60 },
+          { name: "↑", keyName: "f", x: 30, y: 0, w: VW - 60, h: 60 },
+        ];
+        drawTouchZones(vctx, touchZones, { filled: true, alpha: 0.1 });
+      }
+
       hudAcc += dt;
       if (hudAcc > 0.1) {
         hudAcc = 0;
@@ -509,6 +539,7 @@ export default function LostFox() {
       cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      cleanupTouch();
       map.removeEventListener("click", onMapClick);
     };
   }, [seed, started]);
