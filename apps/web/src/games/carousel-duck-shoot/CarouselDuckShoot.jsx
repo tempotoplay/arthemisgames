@@ -1,5 +1,9 @@
 import { useRef, useEffect, useState } from "react";
-import { attachTouchInput, drawTouchZones } from "../touch-input";
+import { attachTouchInput, drawTouchZones, toCanvasCoords } from "../touch-input";
+
+const isTouchDevice = () =>
+  typeof window !== "undefined" &&
+  ("ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0);
 
 /**
  * Carousel Duck Shoot
@@ -175,6 +179,7 @@ export default function CarouselDuckShoot() {
   const audio = useRef(null);
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [touch] = useState(isTouchDevice);
   const mutedRef = useRef(false);
   const [hud, setHud] = useState({
     score: 0, hits: 0, shots: 0, ammo: MAG, reloading: false, reloadPct: 0, best: 0,
@@ -250,7 +255,6 @@ export default function CarouselDuckShoot() {
   }
 
   useEffect(() => {
-    const isTouchDevice = () => "ontouchstart" in window;
     const canvas = canvasRef.current;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = W * dpr;
@@ -311,13 +315,15 @@ export default function CarouselDuckShoot() {
 
     if (isTouchDevice() && canvas) {
       const touchZones = [
-        { name: "◄", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
-        { name: "►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
+        { name: "◄ MOVE", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
+        { name: "MOVE ►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
       ];
-      const fireZone = { x: W / 3, y: H / 2, w: W / 3, h: H / 2 };
+      const fireZone = { x: W / 3, y: 0, w: W / 3, h: H };
       let touchCleanup = attachTouchInput({
         canvas,
         zones: touchZones,
+        width: W,
+        height: H,
         onZoneChange: (update) => {
           Object.assign(g.keys, update);
         },
@@ -326,10 +332,8 @@ export default function CarouselDuckShoot() {
       // Fire zone: tap to fire, don't hold.
       const handleFireTap = (e) => {
         if (!canvas) return;
-        const rect = canvas.getBoundingClientRect();
         for (const touch of e.changedTouches) {
-          const x = touch.clientX - rect.left;
-          const y = touch.clientY - rect.top;
+          const { x, y } = toCanvasCoords(canvas, touch.clientX, touch.clientY, W, H);
           if (x >= fireZone.x && x < fireZone.x + fireZone.w && y >= fireZone.y && y < fireZone.y + fireZone.h) {
             fire();
           }
@@ -791,14 +795,15 @@ export default function CarouselDuckShoot() {
       drawGunAndSights();
       ctx.restore();
 
-      // Draw touch zones if on a touch device
-      if (isTouchDevice()) {
+      // Draw touch zones if on a touch device (skipped while paused/over so the
+      // end-of-round overlay stays clean).
+      if (isTouchDevice() && !g.paused && !g.roundOver) {
         const touchZones = [
-          { name: "◄", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
-          { name: "►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
-          { name: "FIRE", keyName: "fire", x: W / 3, y: H / 2, w: W / 3, h: H / 2 },
+          { name: "◄ MOVE", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
+          { name: "MOVE ►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
+          { name: "FIRE", keyName: "fire", x: W / 3, y: 0, w: W / 3, h: H },
         ];
-        drawTouchZones(ctx, touchZones, { filled: true, alpha: 0.08 });
+        drawTouchZones(ctx, touchZones, { filled: true, alpha: 0.1 });
       }
     };
 
@@ -879,7 +884,7 @@ export default function CarouselDuckShoot() {
     boxShadow: "0 20px 60px rgba(0,0,0,0.5)", userSelect: "none",
     fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
   };
-  const canvasStyle = { width: "100%", height: "100%", display: "block" };
+  const canvasStyle = { width: "100%", height: "100%", display: "block", touchAction: "none" };
   const hudBase = { position: "absolute", color: "#fff", pointerEvents: "none", textShadow: "0 2px 6px rgba(0,0,0,0.6)" };
   const pill = {
     display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 12px",
@@ -889,36 +894,6 @@ export default function CarouselDuckShoot() {
 
   return (
     <div style={{ background: "#140c20", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      {/* banner: title + controls + start button */}
-      {!started && (
-        <div style={{ maxWidth: 900, margin: "0 auto 16px", textAlign: "center", color: "#fff" }}>
-          <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Carousel Duck Shoot</h2>
-          <p style={{ margin: "4px 0 12px", fontSize: 13, opacity: 0.8 }}>
-            Clear all 9 ducks. Bullets take time to fly, so lead your target. Every shot costs 20 points.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
-            <span><b>A/D</b> aim</span>
-            <span>·</span>
-            <span><b>Space</b> fire</span>
-            <span>·</span>
-            <span><b>R</b> reload</span>
-            <span>·</span>
-            <span><b>P</b> pause</span>
-            <button
-              onClick={begin}
-              style={{
-                cursor: "pointer", border: "none", borderRadius: 999, padding: "8px 24px",
-                fontSize: 14, fontWeight: 700, color: "#241544",
-                background: "linear-gradient(180deg,#ffe08a,#ffc94d)",
-                boxShadow: "0 6px 20px rgba(255,201,77,0.3)",
-              }}
-            >
-              Start
-            </button>
-          </div>
-        </div>
-      )}
-
       <div style={wrap}>
         <canvas ref={canvasRef} style={canvasStyle} />
 
@@ -968,7 +943,9 @@ export default function CarouselDuckShoot() {
         {/* bottom-right: controls + mute */}
         <div style={{ ...hudBase, bottom: 14, right: 14, textAlign: "right", display: "flex", gap: 8, alignItems: "center", fontSize: "clamp(12px, 2vw, 14px)" }}>
           <div style={pill}>
-            <span style={{ opacity: 0.7 }}>aim</span> <b>A</b> <b>D</b> · <span style={{ opacity: 0.7 }}>fire</span> <b>Space</b> · <b>R</b> reload · <b>P</b> pause
+            {touch
+              ? <><span style={{ opacity: 0.7 }}>edges</span> move · <span style={{ opacity: 0.7 }}>centre</span> fire</>
+              : <><span style={{ opacity: 0.7 }}>aim</span> <b>A</b> <b>D</b> · <span style={{ opacity: 0.7 }}>fire</span> <b>Space</b> · <b>R</b> reload · <b>P</b> pause</>}
           </div>
           <button
             onClick={() => setMuted((m) => !m)}
@@ -986,11 +963,33 @@ export default function CarouselDuckShoot() {
         {/* start overlay */}
         {!started && (
           <div style={{
-            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(12,7,20,0.6)", backdropFilter: "blur(1px)",
+            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", textAlign: "center",
+            background: "rgba(12,7,20,0.55)", backdropFilter: "blur(2px)", color: "#fff",
+            fontFamily: "system-ui, sans-serif", padding: 16, overflowY: "auto",
           }}>
-            <div style={{ textAlign: "center", color: "#fff", fontSize: 24 }}>
-              ← Use controls above to start →
+            <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7 }}>CARNIVAL GALLERY</div>
+            <h1 style={{ fontSize: 46, margin: "6px 0 4px", fontWeight: 800 }}>Carousel Duck Shoot</h1>
+            <p style={{ maxWidth: 470, opacity: 0.85, lineHeight: 1.5, margin: "0 0 22px" }}>
+              Clear all {N_DUCKS} ducks — they don't come back. Bullets take time to fly,
+              so <b>lead your target</b>, and every shot costs {SHOT_COST} points. Spend them wisely.
+            </p>
+            <button
+              onClick={begin}
+              style={{
+                cursor: "pointer", border: "none", borderRadius: 999, padding: "14px 40px",
+                fontSize: 18, fontWeight: 700, color: "#241544",
+                background: "linear-gradient(180deg,#ffe08a,#ffc94d)",
+                boxShadow: "0 10px 30px rgba(255,201,77,0.4)",
+              }}
+            >
+              Start shooting
+            </button>
+            <div style={{ marginTop: 18, fontSize: 13, opacity: 0.7, lineHeight: 1.6 }}>
+              {touch
+                ? <>Tap <b>left / right edge</b> to move · tap <b>centre</b> to fire</>
+                : <>A / D aim · Space trigger · R reload</>}
+              <br />🦆 = {DUCK_PTS} · ✨ gold = {GOLD_PTS} · −{SHOT_COST}/shot
             </div>
           </div>
         )}

@@ -1,6 +1,10 @@
 import { useRef, useEffect, useState } from "react";
 import { attachTouchInput, drawTouchZones } from "../touch-input";
 
+const isTouchDevice = () =>
+  typeof window !== "undefined" &&
+  ("ontouchstart" in window || (navigator.maxTouchPoints || 0) > 0);
+
 /**
  * Lost Fox — a self-localization (orienteering) game.
  * ----------------------------------------------------------------------------
@@ -36,6 +40,14 @@ const VW = 560, VH = 560, VCX = VW / 2, VCY = VH / 2 + 16;
 const VIEW_R = 252;               // sight circle radius in px
 const SCALE = VIEW_R / SIGHT;     // world units -> px in the view
 const RIM_R = 244;                // rim-indicator ring radius in px
+
+// on-screen touch buttons over the egocentric view (logical view coordinates):
+// a thumb-friendly bottom row — turn left, walk forward, turn right.
+const VIEW_TOUCH_ZONES = [
+  { name: "◄", keyName: "l", x: 14, y: VH - 104, w: 96, h: 90 },
+  { name: "WALK", keyName: "f", x: VW / 2 - 70, y: VH - 104, w: 140, h: 90 },
+  { name: "►", keyName: "r", x: VW - 110, y: VH - 104, w: 96, h: 90 },
+];
 
 // map canvas
 const MW = 340, MH = 340, MPAD = 18;
@@ -191,7 +203,18 @@ export default function LostFox() {
   const [seed, setSeed] = useState(() => todaySeed());
   const [started, setStarted] = useState(false);
   const [compass, setCompass] = useState(true);
+  const [touch] = useState(isTouchDevice);
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768,
+  );
   const compassRef = useRef(true);
+
+  // Keep the layout (side-by-side vs stacked) in sync with viewport width.
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [hud, setHud] = useState({
     energyPct: 100, used: 0, status: "playing", score: 0, best: 0,
     flagResult: "", revealed: false,
@@ -216,7 +239,6 @@ export default function LostFox() {
   }
 
   useEffect(() => {
-    const isTouchDevice = () => "ontouchstart" in window;
     const view = viewRef.current, map = mapRef.current;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     for (const [c, w, h] of [[view, VW, VH], [map, MW, MH]]) {
@@ -251,14 +273,11 @@ export default function LostFox() {
     let cleanupTouch = () => {};
 
     if (isTouchDevice() && view) {
-      const touchZones = [
-        { name: "←", keyName: "l", x: 0, y: VH - 60, w: 60, h: 60 },
-        { name: "→", keyName: "r", x: VW - 60, y: VH - 60, w: 60, h: 60 },
-        { name: "↑", keyName: "f", x: 30, y: 0, w: VW - 60, h: 60 },
-      ];
       cleanupTouch = attachTouchInput({
         canvas: view,
-        zones: touchZones,
+        zones: VIEW_TOUCH_ZONES,
+        width: VW,
+        height: VH,
         onZoneChange: (update) => Object.assign(g.keys, update),
       });
     }
@@ -511,14 +530,9 @@ export default function LostFox() {
       renderView();
       renderMap();
 
-      // Draw touch zones if on a touch device
-      if (isTouchDevice()) {
-        const touchZones = [
-          { name: "←", keyName: "l", x: 0, y: VH - 60, w: 60, h: 60 },
-          { name: "→", keyName: "r", x: VW - 60, y: VH - 60, w: 60, h: 60 },
-          { name: "↑", keyName: "f", x: 30, y: 0, w: VW - 60, h: 60 },
-        ];
-        drawTouchZones(vctx, touchZones, { filled: true, alpha: 0.1 });
+      // Draw on-screen touch buttons while actively playing on a touch device.
+      if (isTouchDevice() && started && g.status === "playing") {
+        drawTouchZones(vctx, VIEW_TOUCH_ZONES, { filled: true, alpha: 0.16 });
       }
 
       hudAcc += dt;
@@ -580,38 +594,11 @@ export default function LostFox() {
 
   return (
     <div style={{ background: "#0f1713", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      {/* banner: title + controls + start buttons */}
-      {!started && (
-        <div style={{ maxWidth: 940, margin: "0 auto 16px", textAlign: "center", color: "#fff" }}>
-          <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Lost Fox</h2>
-          <p style={{ margin: "4px 0 12px", fontSize: 13, opacity: 0.8 }}>
-            Find the treasure. Match your view to the map, figure out where you are, then dig it up.
-          </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", alignItems: "center", flexWrap: "wrap", fontSize: 13, marginBottom: 12 }}>
-            <span><b>W</b> walk</span>
-            <span>·</span>
-            <span><b>A/D</b> turn</span>
-            <span>·</span>
-            <span><b>C</b> compass</span>
-            <span>·</span>
-            <span>click map for flag</span>
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-            <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
-              Start (with compass)
-            </button>
-            <button style={btn} onClick={() => { setCompass(false); setStarted(true); }}>
-              Start (no compass)
-            </button>
-          </div>
-        </div>
-      )}
-
       <div style={{ maxWidth: 940, margin: "0 auto" }}>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center", flexDirection: window.innerWidth < 768 ? "column" : "row" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", flexDirection: narrow ? "column" : "row", alignItems: narrow ? "center" : "flex-start" }}>
           {/* egocentric view */}
           <div style={{ position: "relative", width: VW, maxWidth: "100%", flexShrink: 0 }}>
-            <canvas ref={viewRef} style={{ width: "100%", height: "auto", display: "block", borderRadius: 14, background: "#0f1713" }} />
+            <canvas ref={viewRef} style={{ width: "100%", height: "auto", display: "block", borderRadius: 14, background: "#0f1713", touchAction: "none" }} />
 
             {/* HUD over the view */}
             <div style={{ position: "absolute", top: 12, left: 12, display: "flex", gap: 8, pointerEvents: "none" }}>
@@ -624,11 +611,30 @@ export default function LostFox() {
 
             {!started && (
               <div style={{
-                position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                background: "rgba(8,14,10,0.6)", borderRadius: 14,
+                position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", textAlign: "center",
+                background: "rgba(8,14,10,0.82)", borderRadius: 14, color: "#fff", padding: 20, overflowY: "auto",
               }}>
-                <div style={{ textAlign: "center", color: "#fff", fontSize: 18 }}>
-                  ← Use controls above to start →
+                <div style={{ fontSize: 12, letterSpacing: 4, opacity: 0.7 }}>ORIENTEERING</div>
+                <h1 style={{ fontSize: 40, margin: "4px 0 6px", fontWeight: 800 }}>Lost Fox</h1>
+                <p style={{ maxWidth: 430, opacity: 0.85, lineHeight: 1.5, margin: "0 0 18px" }}>
+                  You're dropped somewhere on the map, facing a random way. You can see only
+                  what's around you — but the full map shows every landmark and the treasure.
+                  Match what you see to the map, work out where you are and which way is north,
+                  then go dig it up.
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                  <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
+                    Start (with compass)
+                  </button>
+                  <button style={btn} onClick={() => { setCompass(false); setStarted(true); }}>
+                    Start (no compass — harder)
+                  </button>
+                </div>
+                <div style={{ marginTop: 16, fontSize: 13, opacity: 0.7 }}>
+                  {touch
+                    ? "On-screen buttons: ◄ ► turn · WALK to move · tap the map to flag"
+                    : "W / ↑ walk · A D / ← → turn · C toggle compass"}
                 </div>
               </div>
             )}
@@ -665,8 +671,8 @@ export default function LostFox() {
             <canvas ref={mapRef} style={{ width: "100%", height: "auto", display: "block", borderRadius: 10, cursor: "crosshair", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }} />
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ fontSize: 12, color: "#9db5a3", lineHeight: 1.4 }}>
-                Click the map where you think you are, then plant your flag — land it close to
-                reveal your position.
+                {touch ? "Tap" : "Click"} the map where you think you are, then plant your flag —
+                land it close to reveal your position.
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button style={btn} onClick={plantFlag}>Plant flag</button>
