@@ -7,6 +7,7 @@ export function Gallery() {
       <header className="gallery__header">
         <h1>Arthemis Games</h1>
         <p>A small collection of client-side browser games. Pick one to play.</p>
+        <p style={{ fontSize: 14, color: "#9db5a3", marginTop: 12 }}>Created by BurgerMaster</p>
       </header>
 
       <ul className="gallery__grid">
