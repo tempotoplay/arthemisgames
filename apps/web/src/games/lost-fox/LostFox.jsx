@@ -512,7 +512,7 @@ export default function LostFox() {
       renderMap();
 
       // Draw touch zones if on a touch device
-      if (isTouchDevice() && started) {
+      if (isTouchDevice()) {
         const touchZones = [
           { name: "←", keyName: "l", x: 0, y: VH - 60, w: 60, h: 60 },
           { name: "→", keyName: "r", x: VW - 60, y: VH - 60, w: 60, h: 60 },
@@ -581,9 +581,9 @@ export default function LostFox() {
   return (
     <div style={{ background: "#0f1713", padding: 16, fontFamily: "system-ui, sans-serif" }}>
       <div style={{ maxWidth: 940, margin: "0 auto" }}>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center", flexDirection: window.innerWidth < 768 ? "column" : "row" }}>
           {/* egocentric view */}
-          <div style={{ position: "relative", width: VW, maxWidth: "100%" }}>
+          <div style={{ position: "relative", width: VW, maxWidth: "100%", flexShrink: 0 }}>
             <canvas ref={viewRef} style={{ width: "100%", height: "auto", display: "block", borderRadius: 14, background: "#0f1713" }} />
 
             {/* HUD over the view */}
@@ -650,7 +650,7 @@ export default function LostFox() {
           </div>
 
           {/* reference map + controls */}
-          <div style={{ width: MW, maxWidth: "100%" }}>
+          <div style={{ width: MW, maxWidth: "100%", flexShrink: 0 }}>
             <div style={{ fontSize: 11, letterSpacing: 2, color: "#cdb", marginBottom: 6 }}>YOUR MAP (north up)</div>
             <canvas ref={mapRef} style={{ width: "100%", height: "auto", display: "block", borderRadius: 10, cursor: "crosshair", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }} />
             <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>

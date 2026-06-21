@@ -314,7 +314,7 @@ export default function CarouselDuckShoot() {
         { name: "◄", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
         { name: "►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
       ];
-      const fireZone = { x: W / 3, y: H * 0.6, w: W / 3, h: H * 0.4 };
+      const fireZone = { x: W / 3, y: H / 2, w: W / 3, h: H / 2 };
       let touchCleanup = attachTouchInput({
         canvas,
         zones: touchZones,
@@ -792,11 +792,11 @@ export default function CarouselDuckShoot() {
       ctx.restore();
 
       // Draw touch zones if on a touch device
-      if (isTouchDevice() && started && !hud.roundOver) {
+      if (isTouchDevice()) {
         const touchZones = [
           { name: "◄", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
           { name: "►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
-          { name: "FIRE", keyName: "fire", x: W / 3, y: H * 0.6, w: W / 3, h: H * 0.4 },
+          { name: "FIRE", keyName: "fire", x: W / 3, y: H / 2, w: W / 3, h: H / 2 },
         ];
         drawTouchZones(ctx, touchZones, { filled: true, alpha: 0.08 });
       }
