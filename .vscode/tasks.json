@@ -1,0 +1,82 @@
+{
+  // Tasks to run/stop the local dev server. Run via:
+  //   Terminal > Run Task...  (or Ctrl+Shift+P > "Tasks: Run Task")
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Dev Server",
+      "detail": "Vite dev server (apps/web) at http://localhost:5173/arthemisgames/ — hot reload",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/apps/web"
+      },
+      // Ensure the Node install dir is on PATH even if VSCode's terminal has a
+      // stale PATH (e.g. Node was installed after VSCode launched). Harmless
+      // once PATH is correct. Adjust the path if Node is installed elsewhere.
+      "windows": {
+        "options": {
+          "cwd": "${workspaceFolder}/apps/web",
+          "env": {
+            "PATH": "C:\\Program Files\\nodejs;${env:PATH}"
+          }
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "devserver"
+      },
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE v.*",
+          "endsPattern": ".*Local:.*localhost.*"
+        }
+      }
+    },
+    {
+      "label": "Stop Dev Server",
+      "detail": "Stop whatever is listening on port 5173 (the dev server)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$c = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue; if ($c) { $c.OwningProcess | Sort-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Host 'Dev server stopped (port 5173 released).' } else { Write-Host 'No dev server running on port 5173.' }"
+      ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-NoProfile",
+          "-Command",
+          "$c = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue; if ($c) { $c.OwningProcess | Sort-Object -Unique | ForEach-Object { Stop-Process -Id $_ -Force }; Write-Host 'Dev server stopped (port 5173 released).' } else { Write-Host 'No dev server running on port 5173.' }"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "pid=$(lsof -ti tcp:5173); if [ -n \"$pid\" ]; then kill $pid && echo 'Dev server stopped (port 5173 released).'; else echo 'No dev server running on port 5173.'; fi"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "pid=$(lsof -ti tcp:5173); if [ -n \"$pid\" ]; then kill $pid && echo 'Dev server stopped (port 5173 released).'; else echo 'No dev server running on port 5173.'; fi"
+        ]
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

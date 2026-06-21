@@ -55,6 +55,9 @@ npm run build      # outputs to apps/web/dist
 npm run preview    # serves the build at http://localhost:4173/arthemisgames/
 ```
 
+As with the dev server, stop the preview server with `Ctrl-C` in the terminal
+running it.
+
 Use the dev server day to day; reach for `preview` to sanity-check the real build
 before relying on a deploy.
 
