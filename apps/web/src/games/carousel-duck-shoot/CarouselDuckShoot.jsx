@@ -957,23 +957,23 @@ export default function CarouselDuckShoot() {
         {!started && (
           <div style={{
             position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", textAlign: "center",
+            alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "auto",
             background: "rgba(12,7,20,0.55)", backdropFilter: "blur(2px)", color: "#fff",
-            fontFamily: "system-ui, sans-serif",
+            fontFamily: "system-ui, sans-serif", padding: 16,
           }}>
             <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7 }}>CARNIVAL GALLERY</div>
             <h1 style={{ fontSize: 46, margin: "6px 0 4px", fontWeight: 800 }}>Carousel Duck Shoot</h1>
-            <p style={{ maxWidth: 470, opacity: 0.85, lineHeight: 1.5, margin: "0 0 22px" }}>
+            <p style={{ maxWidth: 470, opacity: 0.85, lineHeight: 1.5, margin: "0 0 16px" }}>
               Clear all {N_DUCKS} ducks — they don't come back. Bullets take time to fly,
               so <b>lead your target</b>, and every shot costs {SHOT_COST} points. Spend them wisely.
             </p>
-            <div style={{ maxWidth: 470, fontSize: 13, lineHeight: 1.6, opacity: 0.75, margin: "0 0 24px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 14, borderRadius: 10 }}>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Controls:</div>
-              <div><b>A / D</b> or arrow keys – aim left/right</div>
+            <div style={{ maxWidth: 470, fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 12, borderRadius: 10 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Controls:</div>
+              <div><b>A / D</b> – aim left/right</div>
               <div><b>Space</b> – fire</div>
               <div><b>R</b> – reload</div>
-              <div><b>P</b> or Esc – pause</div>
-              <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>On mobile: tap left/right zones to aim, tap FIRE button to shoot.</div>
+              <div><b>P</b> – pause</div>
+              <div style={{ marginTop: 6, fontSize: 11, opacity: 0.7 }}>Mobile: tap zones to aim, tap FIRE to shoot</div>
             </div>
             <button
               onClick={begin}

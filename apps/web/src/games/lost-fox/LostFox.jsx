@@ -598,25 +598,23 @@ export default function LostFox() {
             {!started && (
               <div style={{
                 position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center", textAlign: "center",
-                background: "rgba(8,14,10,0.82)", borderRadius: 14, color: "#fff", padding: 20,
+                alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "auto",
+                background: "rgba(8,14,10,0.82)", borderRadius: 14, color: "#fff", padding: 16,
               }}>
                 <div style={{ fontSize: 12, letterSpacing: 4, opacity: 0.7 }}>ORIENTEERING</div>
                 <h1 style={{ fontSize: 40, margin: "4px 0 6px", fontWeight: 800 }}>Lost Fox</h1>
-                <p style={{ maxWidth: 430, opacity: 0.85, lineHeight: 1.5, margin: "0 0 18px" }}>
+                <p style={{ maxWidth: 430, opacity: 0.85, lineHeight: 1.5, margin: "0 0 16px" }}>
                   You're dropped somewhere on the map, facing a random way. You can see only
                   what's around you — but the full map shows every landmark and the treasure.
                   Match what you see to the map, work out where you are and which way is north,
                   then go dig it up.
                 </p>
-                <div style={{ maxWidth: 430, fontSize: 13, lineHeight: 1.6, opacity: 0.75, margin: "0 0 18px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 14, borderRadius: 10 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Controls:</div>
-                  <div><b>W</b> or ↑ – walk forward</div>
-                  <div><b>A</b> or ← – turn left</div>
-                  <div><b>D</b> or → – turn right</div>
+                <div style={{ maxWidth: 430, fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 12, borderRadius: 10 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>Controls:</div>
+                  <div><b>W</b> – walk forward</div>
+                  <div><b>A</b> / <b>D</b> – turn left/right</div>
                   <div><b>C</b> – toggle compass</div>
-                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>Click the map to plant a flag where you think you are.</div>
-                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>On mobile: use the button zones at the top and sides of the view.</div>
+                  <div style={{ marginTop: 6, fontSize: 11, opacity: 0.7 }}>Click map to plant flag. Mobile: use button zones.</div>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
                   <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
