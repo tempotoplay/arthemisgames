@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { attachTouchInput, drawTouchZones, toCanvasCoords } from "../touch-input";
+import { toCanvasCoords, TapButton, Dock } from "../controls";
 
 const isTouchDevice = () =>
   typeof window !== "undefined" &&
@@ -180,7 +180,17 @@ export default function CarouselDuckShoot() {
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
   const [touch] = useState(isTouchDevice);
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 760,
+  );
   const mutedRef = useRef(false);
+  const actions = useRef({}); // fire / reload / pause, wired up inside the game effect
+
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 760);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [hud, setHud] = useState({
     score: 0, hits: 0, shots: 0, ammo: MAG, reloading: false, reloadPct: 0, best: 0,
     roundOver: false, down: 0, total: N_DUCKS,
@@ -310,42 +320,45 @@ export default function CarouselDuckShoot() {
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
 
-    // ---- touch input -------------------------------------------------------
-    let cleanupTouch = () => {};
+    // ---- drag to aim -------------------------------------------------------
+    // The sights track the pointer's x directly (much finer than a fixed-speed
+    // sweep), so a thumb-drag aims and the docked FIRE button shoots. Works for
+    // mouse too. The start / round-over overlays sit above the canvas, so this
+    // is naturally inert until play is live.
+    let dragging = false;
+    const aimTo = (clientX) => {
+      const { x } = toCanvasCoords(canvas, clientX, 0, W, H);
+      g.sightX = Math.max(X_MIN, Math.min(X_MAX, x));
+    };
+    const onPointerDown = (e) => {
+      if (g.roundOver) return;
+      dragging = true;
+      canvas.setPointerCapture?.(e.pointerId);
+      aimTo(e.clientX);
+    };
+    const onPointerMove = (e) => { if (dragging) aimTo(e.clientX); };
+    const endDrag = (e) => {
+      dragging = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+    };
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
 
-    if (isTouchDevice() && canvas) {
-      const touchZones = [
-        { name: "◄ MOVE", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
-        { name: "MOVE ►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
-      ];
-      const fireZone = { x: W / 3, y: 0, w: W / 3, h: H };
-      let touchCleanup = attachTouchInput({
-        canvas,
-        zones: touchZones,
-        width: W,
-        height: H,
-        onZoneChange: (update) => {
-          Object.assign(g.keys, update);
-        },
-      });
+    // Expose discrete actions to the on-screen control dock.
+    actions.current = {
+      fire,
+      reload: startReload,
+      togglePause: () => { g.paused = !g.paused; },
+    };
 
-      // Fire zone: tap to fire, don't hold.
-      const handleFireTap = (e) => {
-        if (!canvas) return;
-        for (const touch of e.changedTouches) {
-          const { x, y } = toCanvasCoords(canvas, touch.clientX, touch.clientY, W, H);
-          if (x >= fireZone.x && x < fireZone.x + fireZone.w && y >= fireZone.y && y < fireZone.y + fireZone.h) {
-            fire();
-          }
-        }
-      };
-      canvas.addEventListener("touchstart", handleFireTap, { passive: true });
-
-      cleanupTouch = () => {
-        touchCleanup();
-        canvas.removeEventListener("touchstart", handleFireTap);
-      };
-    }
+    const cleanupTouch = () => {
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", endDrag);
+      canvas.removeEventListener("pointercancel", endDrag);
+    };
 
 
     // ---- update ------------------------------------------------------------
@@ -794,17 +807,6 @@ export default function CarouselDuckShoot() {
       drawBullets();
       drawGunAndSights();
       ctx.restore();
-
-      // Draw touch zones if on a touch device (skipped while paused/over so the
-      // end-of-round overlay stays clean).
-      if (isTouchDevice() && !g.paused && !g.roundOver) {
-        const touchZones = [
-          { name: "◄ MOVE", keyName: "left", x: 0, y: 0, w: W / 3, h: H },
-          { name: "MOVE ►", keyName: "right", x: (W * 2) / 3, y: 0, w: W / 3, h: H },
-          { name: "FIRE", keyName: "fire", x: W / 3, y: 0, w: W / 3, h: H },
-        ];
-        drawTouchZones(ctx, touchZones, { filled: true, alpha: 0.1 });
-      }
     };
 
     // ---- HUD sync (throttled) ---------------------------------------------
@@ -894,9 +896,48 @@ export default function CarouselDuckShoot() {
 
   return (
     <div style={{ background: "#140c20", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+      {/* compact HUD bar — shown on phones in place of the corner HUD */}
+      {narrow && (
+        <div style={{
+          maxWidth: 560, margin: "0 auto 10px", display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: 10, color: "#fff",
+        }}>
+          <div>
+            <span style={{ fontSize: 10, letterSpacing: 2, opacity: 0.6 }}>SCORE</span>
+            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1 }}>{hud.score}</div>
+          </div>
+          <div style={pill}>
+            <span style={{ opacity: 0.7 }}>🦆</span><b>{hud.total - hud.down}</b>
+            <span style={{ opacity: 0.5 }}>/ {hud.total}</span>
+          </div>
+          <div>
+            {hud.reloading ? (
+              <span style={{ display: "inline-block", width: 60, height: 6, background: "rgba(255,255,255,0.2)", borderRadius: 999, overflow: "hidden" }}>
+                <span style={{ display: "block", height: "100%", width: `${hud.reloadPct * 100}%`, background: "#ffd166" }} />
+              </span>
+            ) : (
+              <span style={{ display: "flex", gap: 4 }}>
+                {Array.from({ length: MAG }).map((_, i) => (
+                  <span key={i} style={{
+                    width: 7, height: 18, borderRadius: 2,
+                    background: i < hud.ammo ? "#ffd166" : "rgba(255,255,255,0.15)",
+                  }} />
+                ))}
+              </span>
+            )}
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontSize: 10, letterSpacing: 2, opacity: 0.6 }}>BEST</span>
+            <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{hud.best}</div>
+          </div>
+        </div>
+      )}
+
       <div style={wrap}>
         <canvas ref={canvasRef} style={canvasStyle} />
 
+        {/* desktop corner HUD (phones use the compact bar + dock instead) */}
+        {!narrow && (<>
         {/* top-left: score */}
         <div style={{ ...hudBase, top: 14, left: 14 }}>
           <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.7 }}>SCORE</div>
@@ -959,6 +1000,7 @@ export default function CarouselDuckShoot() {
             {muted ? "🔇" : "🔊"}
           </button>
         </div>
+        </>)}
 
         {/* start overlay */}
         {!started && (
@@ -969,8 +1011,8 @@ export default function CarouselDuckShoot() {
             fontFamily: "system-ui, sans-serif", padding: 16, overflowY: "auto",
           }}>
             <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7 }}>CARNIVAL GALLERY</div>
-            <h1 style={{ fontSize: 46, margin: "6px 0 4px", fontWeight: 800 }}>Carousel Duck Shoot</h1>
-            <p style={{ maxWidth: 470, opacity: 0.85, lineHeight: 1.5, margin: "0 0 22px" }}>
+            <h1 style={{ fontSize: "clamp(28px, 8vw, 46px)", margin: "6px 0 4px", fontWeight: 800, maxWidth: "100%" }}>Carousel Duck Shoot</h1>
+            <p style={{ maxWidth: "min(470px, 100%)", opacity: 0.85, lineHeight: 1.5, margin: "0 0 22px" }}>
               Clear all {N_DUCKS} ducks — they don't come back. Bullets take time to fly,
               so <b>lead your target</b>, and every shot costs {SHOT_COST} points. Spend them wisely.
             </p>
@@ -987,7 +1029,7 @@ export default function CarouselDuckShoot() {
             </button>
             <div style={{ marginTop: 18, fontSize: 13, opacity: 0.7, lineHeight: 1.6 }}>
               {touch
-                ? <>Tap <b>left / right edge</b> to move · tap <b>centre</b> to fire</>
+                ? <><b>Drag</b> to aim · tap <b>FIRE</b> to shoot</>
                 : <>A / D aim · Space trigger · R reload</>}
               <br />🦆 = {DUCK_PTS} · ✨ gold = {GOLD_PTS} · −{SHOT_COST}/shot
             </div>
@@ -1097,6 +1139,32 @@ export default function CarouselDuckShoot() {
           </div>
         )}
       </div>
+
+      {/* on-screen control dock — phones, during play */}
+      {touch && started && !hud.roundOver && (
+        <Dock>
+          <TapButton ariaLabel="Reload" onTap={() => actions.current.reload?.()} style={{ fontSize: 22 }}>
+            ⟳
+          </TapButton>
+          <TapButton
+            ariaLabel="Fire"
+            accent="linear-gradient(180deg,#ffe08a,#ffc94d)"
+            onTap={() => actions.current.fire?.()}
+            style={{ flex: 2.4, fontSize: 20, letterSpacing: 1 }}
+          >
+            FIRE
+          </TapButton>
+          <TapButton ariaLabel={muted ? "Unmute" : "Mute"} onTap={() => setMuted((m) => !m)} style={{ fontSize: 20 }}>
+            {muted ? "🔇" : "🔊"}
+          </TapButton>
+        </Dock>
+      )}
+
+      {touch && started && !hud.roundOver && (
+        <div style={{ textAlign: "center", color: "#fff", opacity: 0.55, fontSize: 12, marginTop: 8 }}>
+          Drag on the gallery to aim · tap FIRE to shoot
+        </div>
+      )}
     </div>
   );
 }

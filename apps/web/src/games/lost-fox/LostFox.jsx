@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { attachTouchInput, drawTouchZones } from "../touch-input";
+import { HoldButton, Dock } from "../controls";
 
 const isTouchDevice = () =>
   typeof window !== "undefined" &&
@@ -40,14 +40,6 @@ const VW = 560, VH = 560, VCX = VW / 2, VCY = VH / 2 + 16;
 const VIEW_R = 252;               // sight circle radius in px
 const SCALE = VIEW_R / SIGHT;     // world units -> px in the view
 const RIM_R = 244;                // rim-indicator ring radius in px
-
-// on-screen touch buttons over the egocentric view (logical view coordinates):
-// a thumb-friendly bottom row — turn left, walk forward, turn right.
-const VIEW_TOUCH_ZONES = [
-  { name: "◄", keyName: "l", x: 14, y: VH - 104, w: 96, h: 90 },
-  { name: "WALK", keyName: "f", x: VW / 2 - 70, y: VH - 104, w: 140, h: 90 },
-  { name: "►", keyName: "r", x: VW - 110, y: VH - 104, w: 96, h: 90 },
-];
 
 // map canvas
 const MW = 340, MH = 340, MPAD = 18;
@@ -269,18 +261,37 @@ export default function LostFox() {
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
 
-    // ---- touch input -------------------------------------------------------
-    let cleanupTouch = () => {};
-
-    if (isTouchDevice() && view) {
-      cleanupTouch = attachTouchInput({
-        canvas: view,
-        zones: VIEW_TOUCH_ZONES,
-        width: VW,
-        height: VH,
-        onZoneChange: (update) => Object.assign(g.keys, update),
-      });
-    }
+    // ---- drag to turn ------------------------------------------------------
+    // A horizontal drag across the view rotates your heading (like looking
+    // around); the docked WALK button moves you forward. Dragging right turns
+    // right, matching the ► button and the right-arrow key. Works with mouse
+    // too. The walk button feeds g.keys.f directly.
+    const TURN_PER_PX = 0.005; // radians per CSS pixel dragged
+    let lastX = null;
+    const onPointerDown = (e) => {
+      if (g.status !== "playing") return;
+      lastX = e.clientX;
+      view.setPointerCapture?.(e.pointerId);
+    };
+    const onPointerMove = (e) => {
+      if (lastX == null) return;
+      g.phi += (e.clientX - lastX) * TURN_PER_PX;
+      lastX = e.clientX;
+    };
+    const endTurn = (e) => {
+      lastX = null;
+      view.releasePointerCapture?.(e.pointerId);
+    };
+    view.addEventListener("pointerdown", onPointerDown);
+    view.addEventListener("pointermove", onPointerMove);
+    view.addEventListener("pointerup", endTurn);
+    view.addEventListener("pointercancel", endTurn);
+    const cleanupTouch = () => {
+      view.removeEventListener("pointerdown", onPointerDown);
+      view.removeEventListener("pointermove", onPointerMove);
+      view.removeEventListener("pointerup", endTurn);
+      view.removeEventListener("pointercancel", endTurn);
+    };
 
 
     // click the map to set a position guess
@@ -530,10 +541,6 @@ export default function LostFox() {
       renderView();
       renderMap();
 
-      // Draw on-screen touch buttons while actively playing on a touch device.
-      if (isTouchDevice() && started && g.status === "playing") {
-        drawTouchZones(vctx, VIEW_TOUCH_ZONES, { filled: true, alpha: 0.16 });
-      }
 
       hudAcc += dt;
       if (hudAcc > 0.1) {
@@ -596,8 +603,9 @@ export default function LostFox() {
     <div style={{ background: "#0f1713", padding: 16, fontFamily: "system-ui, sans-serif" }}>
       <div style={{ maxWidth: 940, margin: "0 auto" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", flexDirection: narrow ? "column" : "row", alignItems: narrow ? "center" : "flex-start" }}>
-          {/* egocentric view */}
-          <div style={{ position: "relative", width: VW, maxWidth: "100%", flexShrink: 0 }}>
+          {/* egocentric view + on-screen controls */}
+          <div style={{ display: "flex", flexDirection: "column", width: VW, maxWidth: "100%", flexShrink: 0 }}>
+          <div style={{ position: "relative", width: "100%" }}>
             <canvas ref={viewRef} style={{ width: "100%", height: "auto", display: "block", borderRadius: 14, background: "#0f1713", touchAction: "none" }} />
 
             {/* HUD over the view */}
@@ -616,14 +624,14 @@ export default function LostFox() {
                 background: "rgba(8,14,10,0.82)", borderRadius: 14, color: "#fff", padding: 20, overflowY: "auto",
               }}>
                 <div style={{ fontSize: 12, letterSpacing: 4, opacity: 0.7 }}>ORIENTEERING</div>
-                <h1 style={{ fontSize: 40, margin: "4px 0 6px", fontWeight: 800 }}>Lost Fox</h1>
-                <p style={{ maxWidth: 430, opacity: 0.85, lineHeight: 1.5, margin: "0 0 18px" }}>
+                <h1 style={{ fontSize: "clamp(28px, 9vw, 40px)", margin: "4px 0 6px", fontWeight: 800 }}>Lost Fox</h1>
+                <p style={{ maxWidth: "min(430px, 100%)", opacity: 0.85, lineHeight: 1.5, margin: "0 0 18px" }}>
                   You're dropped somewhere on the map, facing a random way. You can see only
                   what's around you — but the full map shows every landmark and the treasure.
                   Match what you see to the map, work out where you are and which way is north,
                   then go dig it up.
                 </p>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", width: "100%" }}>
                   <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
                     Start (with compass)
                   </button>
@@ -663,6 +671,44 @@ export default function LostFox() {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* on-screen control dock — touch devices, during play */}
+          {touch && started && hud.status === "playing" && (
+            <Dock style={{ marginTop: 12 }}>
+              <HoldButton
+                ariaLabel="Turn left"
+                onPress={() => { G.current.keys.l = true; }}
+                onRelease={() => { G.current.keys.l = false; }}
+                style={{ fontSize: 26 }}
+              >
+                ◄
+              </HoldButton>
+              <HoldButton
+                ariaLabel="Walk forward"
+                accent="linear-gradient(180deg,#9ae6b4,#48bb78)"
+                onPress={() => { G.current.keys.f = true; }}
+                onRelease={() => { G.current.keys.f = false; }}
+                style={{ flex: 1.8 }}
+              >
+                WALK ▲
+              </HoldButton>
+              <HoldButton
+                ariaLabel="Turn right"
+                onPress={() => { G.current.keys.r = true; }}
+                onRelease={() => { G.current.keys.r = false; }}
+                style={{ fontSize: 26 }}
+              >
+                ►
+              </HoldButton>
+            </Dock>
+          )}
+
+          {touch && started && hud.status === "playing" && (
+            <div style={{ textAlign: "center", color: "#cdb", opacity: 0.6, fontSize: 12, marginTop: 8 }}>
+              Drag the view to turn · hold WALK to move
+            </div>
+          )}
           </div>
 
           {/* reference map + controls */}

@@ -12,6 +12,9 @@ body {
   background: #140c20;
   color: #e8e0f5;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Stop the page from rubber-band scrolling / bouncing while dragging on a
+     game canvas. Individual canvases also set touch-action: none. */
+  overscroll-behavior: none;
 }
 
 a {
@@ -144,4 +147,15 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* On phones, anchor the game to the top so the wide/short canvas and its
+   control dock use the screen instead of floating in the vertical centre. */
+@media (max-width: 760px) {
+  .game-screen__stage {
+    align-items: flex-start;
+  }
+  .game-screen__stage > * {
+    width: 100%;
+  }
 }
