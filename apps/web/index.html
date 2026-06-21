@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Arthemis Games</title>
     <meta name="description" content="A small collection of client-side browser games." />
+    <script>
+      // SPA fallback: GitHub Pages returns 404 for unknown paths. If this page
+      // loads as a 404 (deep link like /arthemisgames/games/lost-fox), we store
+      // the intended path in sessionStorage and redirect to the app root, where
+      // React Router will read it and restore the route.
+      (function () {
+        const path = window.location.pathname;
+        const base = '/arthemisgames/';
+        if (path !== base && path !== base + 'index.html' && path.startsWith(base)) {
+          const route = path.slice(base.length);
+          if (route && !route.includes('.')) { // not a file request
+            window.sessionStorage.setItem('redirectRoute', '/' + route);
+            window.location.href = base;
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
