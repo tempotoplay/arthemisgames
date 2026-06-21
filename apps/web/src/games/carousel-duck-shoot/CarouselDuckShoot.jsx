@@ -936,9 +936,9 @@ export default function CarouselDuckShoot() {
         </div>
 
         {/* bottom-right: controls + mute */}
-        <div style={{ ...hudBase, bottom: 14, right: 14, textAlign: "right", display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ ...hudBase, bottom: 14, right: 14, textAlign: "right", display: "flex", gap: 8, alignItems: "center", fontSize: "clamp(12px, 2vw, 14px)" }}>
           <div style={pill}>
-            <b>A</b> <b>D</b> move · <b>Space</b> fire · <b>R</b> reload · <b>P</b> pause
+            <span style={{ opacity: 0.7 }}>aim</span> <b>A</b> <b>D</b> · <span style={{ opacity: 0.7 }}>fire</span> <b>Space</b> · <b>R</b> reload · <b>P</b> pause
           </div>
           <button
             onClick={() => setMuted((m) => !m)}
@@ -967,6 +967,14 @@ export default function CarouselDuckShoot() {
               Clear all {N_DUCKS} ducks — they don't come back. Bullets take time to fly,
               so <b>lead your target</b>, and every shot costs {SHOT_COST} points. Spend them wisely.
             </p>
+            <div style={{ maxWidth: 470, fontSize: 13, lineHeight: 1.6, opacity: 0.75, margin: "0 0 24px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 14, borderRadius: 10 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Controls:</div>
+              <div><b>A / D</b> or arrow keys – aim left/right</div>
+              <div><b>Space</b> – fire</div>
+              <div><b>R</b> – reload</div>
+              <div><b>P</b> or Esc – pause</div>
+              <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>On mobile: tap left/right zones to aim, tap FIRE button to shoot.</div>
+            </div>
             <button
               onClick={begin}
               style={{

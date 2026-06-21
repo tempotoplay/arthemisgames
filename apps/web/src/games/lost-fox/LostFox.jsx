@@ -609,16 +609,22 @@ export default function LostFox() {
                   Match what you see to the map, work out where you are and which way is north,
                   then go dig it up.
                 </p>
+                <div style={{ maxWidth: 430, fontSize: 13, lineHeight: 1.6, opacity: 0.75, margin: "0 0 18px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 14, borderRadius: 10 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Controls:</div>
+                  <div><b>W</b> or ↑ – walk forward</div>
+                  <div><b>A</b> or ← – turn left</div>
+                  <div><b>D</b> or → – turn right</div>
+                  <div><b>C</b> – toggle compass</div>
+                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>Click the map to plant a flag where you think you are.</div>
+                  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.7 }}>On mobile: use the button zones at the top and sides of the view.</div>
+                </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
                   <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
                     Start (with compass)
                   </button>
                   <button style={btn} onClick={() => { setCompass(false); setStarted(true); }}>
-                    Start (no compass — harder)
+                    Start (no compass)
                   </button>
-                </div>
-                <div style={{ marginTop: 16, fontSize: 13, opacity: 0.7 }}>
-                  W / ↑ walk · A D / ← → turn · C toggle compass
                 </div>
               </div>
             )}
