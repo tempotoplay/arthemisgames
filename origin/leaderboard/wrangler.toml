@@ -1,0 +1,18 @@
+name = "games-leaderboard"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+# Optional: restrict browser writes to your published site's origin.
+# Leave commented to allow any origin (fine for a public hobby board).
+# [vars]
+# ALLOWED_ORIGIN = "https://games.example.com"
+
+[[durable_objects.bindings]]
+name = "LEADERBOARD"
+class_name = "Leaderboard"
+
+# SQLite-backed Durable Objects are the variant available on the FREE plan.
+# (Use new_sqlite_classes, not new_classes, for this to run without a paid plan.)
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Leaderboard"]
