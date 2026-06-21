@@ -180,17 +180,26 @@ export default function CarouselDuckShoot() {
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
   const [touch] = useState(isTouchDevice);
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < 760,
+  const [portrait, setPortrait] = useState(
+    () => typeof window === "undefined" || window.innerHeight >= window.innerWidth,
   );
   const mutedRef = useRef(false);
   const actions = useRef({}); // fire / reload / pause, wired up inside the game effect
 
   useEffect(() => {
-    const onResize = () => setNarrow(window.innerWidth < 760);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const sync = () => setPortrait(window.innerHeight >= window.innerWidth);
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+    };
   }, []);
+
+  // Mobile layout modes: portrait stacks a compact HUD + control dock; landscape
+  // fits the (inherently wide) canvas to the screen height with floating controls.
+  const mPortrait = touch && portrait;
+  const mLandscape = touch && !portrait;
   const [hud, setHud] = useState({
     score: 0, hits: 0, shots: 0, ammo: MAG, reloading: false, reloadPct: 0, best: 0,
     roundOver: false, down: 0, total: N_DUCKS,
@@ -881,10 +890,16 @@ export default function CarouselDuckShoot() {
 
   // ---- styles -------------------------------------------------------------
   const wrap = {
-    position: "relative", width: "100%", maxWidth: 900, margin: "0 auto",
+    position: "relative", margin: "0 auto",
     aspectRatio: `${W} / ${H}`, borderRadius: 16, overflow: "hidden",
     boxShadow: "0 20px 60px rgba(0,0,0,0.5)", userSelect: "none",
     fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+    // Landscape phones: fit the wide canvas to the screen — bounded by both the
+    // available height (it would otherwise be taller than the viewport) and the
+    // viewport width, so it never overflows either axis. Otherwise fill width.
+    ...(mLandscape
+      ? { height: `min(calc(100dvh - 92px), calc((100vw - 32px) * ${H} / ${W}))`, width: "auto", maxWidth: "100%" }
+      : { width: "100%", maxWidth: 900 }),
   };
   const canvasStyle = { width: "100%", height: "100%", display: "block", touchAction: "none" };
   const hudBase = { position: "absolute", color: "#fff", pointerEvents: "none", textShadow: "0 2px 6px rgba(0,0,0,0.6)" };
@@ -896,8 +911,8 @@ export default function CarouselDuckShoot() {
 
   return (
     <div style={{ background: "#140c20", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      {/* compact HUD bar — shown on phones in place of the corner HUD */}
-      {narrow && (
+      {/* compact HUD bar — shown on portrait phones in place of the corner HUD */}
+      {mPortrait && (
         <div style={{
           maxWidth: 560, margin: "0 auto 10px", display: "flex", alignItems: "center",
           justifyContent: "space-between", gap: 10, color: "#fff",
@@ -936,8 +951,8 @@ export default function CarouselDuckShoot() {
       <div style={wrap}>
         <canvas ref={canvasRef} style={canvasStyle} />
 
-        {/* desktop corner HUD (phones use the compact bar + dock instead) */}
-        {!narrow && (<>
+        {/* corner HUD — desktop and landscape phones (portrait uses the bar) */}
+        {!mPortrait && (<>
         {/* top-left: score */}
         <div style={{ ...hudBase, top: 14, left: 14 }}>
           <div style={{ fontSize: 12, letterSpacing: 2, opacity: 0.7 }}>SCORE</div>
@@ -981,25 +996,43 @@ export default function CarouselDuckShoot() {
           )}
         </div>
 
-        {/* bottom-right: controls + mute */}
-        <div style={{ ...hudBase, bottom: 14, right: 14, textAlign: "right", display: "flex", gap: 8, alignItems: "center", fontSize: "clamp(12px, 2vw, 14px)" }}>
-          <div style={pill}>
-            {touch
-              ? <><span style={{ opacity: 0.7 }}>edges</span> move · <span style={{ opacity: 0.7 }}>centre</span> fire</>
-              : <><span style={{ opacity: 0.7 }}>aim</span> <b>A</b> <b>D</b> · <span style={{ opacity: 0.7 }}>fire</span> <b>Space</b> · <b>R</b> reload · <b>P</b> pause</>}
+        {/* bottom-right: keyboard hint + mute (desktop; touch uses dock/floating) */}
+        {!touch && (
+          <div style={{ ...hudBase, bottom: 14, right: 14, textAlign: "right", display: "flex", gap: 8, alignItems: "center", fontSize: "clamp(12px, 2vw, 14px)" }}>
+            <div style={pill}>
+              <span style={{ opacity: 0.7 }}>aim</span> <b>A</b> <b>D</b> · <span style={{ opacity: 0.7 }}>fire</span> <b>Space</b> · <b>R</b> reload · <b>P</b> pause
+            </div>
+            <button
+              onClick={() => setMuted((m) => !m)}
+              style={{
+                pointerEvents: "auto", cursor: "pointer", border: "1px solid rgba(255,255,255,0.15)",
+                background: "rgba(20,12,32,0.6)", color: "#fff", borderRadius: 999,
+                width: 34, height: 34, fontSize: 15,
+              }}
+              title={muted ? "Unmute" : "Mute"}
+            >
+              {muted ? "🔇" : "🔊"}
+            </button>
           </div>
-          <button
-            onClick={() => setMuted((m) => !m)}
-            style={{
-              pointerEvents: "auto", cursor: "pointer", border: "1px solid rgba(255,255,255,0.15)",
-              background: "rgba(20,12,32,0.6)", color: "#fff", borderRadius: 999,
-              width: 34, height: 34, fontSize: 15,
-            }}
-            title={muted ? "Unmute" : "Mute"}
-          >
-            {muted ? "🔇" : "🔊"}
-          </button>
-        </div>
+        )}
+
+        {/* landscape phones: floating controls over the canvas (no room for a dock) */}
+        {mLandscape && started && !hud.roundOver && (
+          <div style={{ position: "absolute", right: 12, bottom: 12, display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <TapButton ariaLabel={muted ? "Unmute" : "Mute"} onTap={() => setMuted((m) => !m)}
+              style={{ flex: "0 0 auto", width: 50, minHeight: 50, fontSize: 20, background: "rgba(20,12,32,0.6)" }}>
+              {muted ? "🔇" : "🔊"}
+            </TapButton>
+            <TapButton ariaLabel="Reload" onTap={() => actions.current.reload?.()}
+              style={{ flex: "0 0 auto", width: 50, minHeight: 50, fontSize: 22, background: "rgba(20,12,32,0.6)" }}>
+              ⟳
+            </TapButton>
+            <TapButton ariaLabel="Fire" accent="linear-gradient(180deg,#ffe08a,#ffc94d)" onTap={() => actions.current.fire?.()}
+              style={{ flex: "0 0 auto", width: 96, minHeight: 60, fontSize: 20, letterSpacing: 1 }}>
+              FIRE
+            </TapButton>
+          </div>
+        )}
         </>)}
 
         {/* start overlay */}
@@ -1032,6 +1065,7 @@ export default function CarouselDuckShoot() {
                 ? <><b>Drag</b> to aim · tap <b>FIRE</b> to shoot</>
                 : <>A / D aim · Space trigger · R reload</>}
               <br />🦆 = {DUCK_PTS} · ✨ gold = {GOLD_PTS} · −{SHOT_COST}/shot
+              {mPortrait && <><br /><span style={{ opacity: 0.85 }}>↻ rotate your phone for a bigger view</span></>}
             </div>
           </div>
         )}
@@ -1140,8 +1174,8 @@ export default function CarouselDuckShoot() {
         )}
       </div>
 
-      {/* on-screen control dock — phones, during play */}
-      {touch && started && !hud.roundOver && (
+      {/* on-screen control dock — portrait phones, during play */}
+      {mPortrait && started && !hud.roundOver && (
         <Dock>
           <TapButton ariaLabel="Reload" onTap={() => actions.current.reload?.()} style={{ fontSize: 22 }}>
             ⟳
@@ -1160,9 +1194,10 @@ export default function CarouselDuckShoot() {
         </Dock>
       )}
 
-      {touch && started && !hud.roundOver && (
+      {mPortrait && started && !hud.roundOver && (
         <div style={{ textAlign: "center", color: "#fff", opacity: 0.55, fontSize: 12, marginTop: 8 }}>
-          Drag on the gallery to aim · tap FIRE to shoot
+          Drag on the gallery to aim · tap FIRE to shoot ·{" "}
+          <span style={{ opacity: 0.85 }}>↻ rotate for a bigger view</span>
         </div>
       )}
     </div>

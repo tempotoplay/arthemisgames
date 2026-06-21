@@ -149,9 +149,10 @@ a {
   justify-content: center;
 }
 
-/* On phones, anchor the game to the top so the wide/short canvas and its
-   control dock use the screen instead of floating in the vertical centre. */
-@media (max-width: 760px) {
+/* On phones in portrait, anchor the game to the top so the stacked canvas,
+   HUD and control dock use the screen instead of floating in the centre.
+   Landscape stays centred so the fit-to-height canvas sits in the middle. */
+@media (max-width: 760px) and (orientation: portrait) {
   .game-screen__stage {
     align-items: flex-start;
   }
