@@ -580,6 +580,33 @@ export default function LostFox() {
 
   return (
     <div style={{ background: "#0f1713", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+      {/* banner: title + controls + start buttons */}
+      {!started && (
+        <div style={{ maxWidth: 940, margin: "0 auto 16px", textAlign: "center", color: "#fff" }}>
+          <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Lost Fox</h2>
+          <p style={{ margin: "4px 0 12px", fontSize: 13, opacity: 0.8 }}>
+            Find the treasure. Match your view to the map, figure out where you are, then dig it up.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", alignItems: "center", flexWrap: "wrap", fontSize: 13, marginBottom: 12 }}>
+            <span><b>W</b> walk</span>
+            <span>·</span>
+            <span><b>A/D</b> turn</span>
+            <span>·</span>
+            <span><b>C</b> compass</span>
+            <span>·</span>
+            <span>click map for flag</span>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+            <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
+              Start (with compass)
+            </button>
+            <button style={btn} onClick={() => { setCompass(false); setStarted(true); }}>
+              Start (no compass)
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{ maxWidth: 940, margin: "0 auto" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center", flexDirection: window.innerWidth < 768 ? "column" : "row" }}>
           {/* egocentric view */}
@@ -597,32 +624,11 @@ export default function LostFox() {
 
             {!started && (
               <div style={{
-                position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "auto",
-                background: "rgba(8,14,10,0.82)", borderRadius: 14, color: "#fff", padding: 16,
+                position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                background: "rgba(8,14,10,0.6)", borderRadius: 14,
               }}>
-                <div style={{ fontSize: 12, letterSpacing: 4, opacity: 0.7 }}>ORIENTEERING</div>
-                <h1 style={{ fontSize: 40, margin: "4px 0 6px", fontWeight: 800 }}>Lost Fox</h1>
-                <p style={{ maxWidth: 430, opacity: 0.85, lineHeight: 1.5, margin: "0 0 16px" }}>
-                  You're dropped somewhere on the map, facing a random way. You can see only
-                  what's around you — but the full map shows every landmark and the treasure.
-                  Match what you see to the map, work out where you are and which way is north,
-                  then go dig it up.
-                </p>
-                <div style={{ maxWidth: 430, fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 12, borderRadius: 10 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>Controls:</div>
-                  <div><b>W</b> – walk forward</div>
-                  <div><b>A</b> / <b>D</b> – turn left/right</div>
-                  <div><b>C</b> – toggle compass</div>
-                  <div style={{ marginTop: 6, fontSize: 11, opacity: 0.7 }}>Click map to plant flag. Mobile: use button zones.</div>
-                </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-                  <button style={primary} onClick={() => { setCompass(true); setStarted(true); }}>
-                    Start (with compass)
-                  </button>
-                  <button style={btn} onClick={() => { setCompass(false); setStarted(true); }}>
-                    Start (no compass)
-                  </button>
+                <div style={{ textAlign: "center", color: "#fff", fontSize: 18 }}>
+                  ← Use controls above to start →
                 </div>
               </div>
             )}

@@ -888,7 +888,37 @@ export default function CarouselDuckShoot() {
   };
 
   return (
-    <div style={{ background: "#140c20", padding: 16 }}>
+    <div style={{ background: "#140c20", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+      {/* banner: title + controls + start button */}
+      {!started && (
+        <div style={{ maxWidth: 900, margin: "0 auto 16px", textAlign: "center", color: "#fff" }}>
+          <h2 style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>Carousel Duck Shoot</h2>
+          <p style={{ margin: "4px 0 12px", fontSize: 13, opacity: 0.8 }}>
+            Clear all 9 ducks. Bullets take time to fly, so lead your target. Every shot costs 20 points.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", alignItems: "center", flexWrap: "wrap", fontSize: 13 }}>
+            <span><b>A/D</b> aim</span>
+            <span>·</span>
+            <span><b>Space</b> fire</span>
+            <span>·</span>
+            <span><b>R</b> reload</span>
+            <span>·</span>
+            <span><b>P</b> pause</span>
+            <button
+              onClick={begin}
+              style={{
+                cursor: "pointer", border: "none", borderRadius: 999, padding: "8px 24px",
+                fontSize: 14, fontWeight: 700, color: "#241544",
+                background: "linear-gradient(180deg,#ffe08a,#ffc94d)",
+                boxShadow: "0 6px 20px rgba(255,201,77,0.3)",
+              }}
+            >
+              Start
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={wrap}>
         <canvas ref={canvasRef} style={canvasStyle} />
 
@@ -956,38 +986,11 @@ export default function CarouselDuckShoot() {
         {/* start overlay */}
         {!started && (
           <div style={{
-            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "auto",
-            background: "rgba(12,7,20,0.55)", backdropFilter: "blur(2px)", color: "#fff",
-            fontFamily: "system-ui, sans-serif", padding: 16,
+            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(12,7,20,0.6)", backdropFilter: "blur(1px)",
           }}>
-            <div style={{ fontSize: 13, letterSpacing: 4, opacity: 0.7 }}>CARNIVAL GALLERY</div>
-            <h1 style={{ fontSize: 46, margin: "6px 0 4px", fontWeight: 800 }}>Carousel Duck Shoot</h1>
-            <p style={{ maxWidth: 470, opacity: 0.85, lineHeight: 1.5, margin: "0 0 16px" }}>
-              Clear all {N_DUCKS} ducks — they don't come back. Bullets take time to fly,
-              so <b>lead your target</b>, and every shot costs {SHOT_COST} points. Spend them wisely.
-            </p>
-            <div style={{ maxWidth: 470, fontSize: 12, lineHeight: 1.5, opacity: 0.75, margin: "0 0 16px", textAlign: "left", background: "rgba(255,255,255,0.05)", padding: 12, borderRadius: 10 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>Controls:</div>
-              <div><b>A / D</b> – aim left/right</div>
-              <div><b>Space</b> – fire</div>
-              <div><b>R</b> – reload</div>
-              <div><b>P</b> – pause</div>
-              <div style={{ marginTop: 6, fontSize: 11, opacity: 0.7 }}>Mobile: tap zones to aim, tap FIRE to shoot</div>
-            </div>
-            <button
-              onClick={begin}
-              style={{
-                cursor: "pointer", border: "none", borderRadius: 999, padding: "14px 40px",
-                fontSize: 18, fontWeight: 700, color: "#241544",
-                background: "linear-gradient(180deg,#ffe08a,#ffc94d)",
-                boxShadow: "0 10px 30px rgba(255,201,77,0.4)",
-              }}
-            >
-              Start shooting
-            </button>
-            <div style={{ marginTop: 18, fontSize: 13, opacity: 0.7 }}>
-              A / D aim · Space trigger · R reload · 🦆 = {DUCK_PTS} · ✨ gold = {GOLD_PTS} · −{SHOT_COST}/shot
+            <div style={{ textAlign: "center", color: "#fff", fontSize: 24 }}>
+              ← Use controls above to start →
             </div>
           </div>
         )}
