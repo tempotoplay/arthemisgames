@@ -45,6 +45,14 @@ export const games: GameModule[] = [
     accent: "#7dd3fc",
     Component: lazy(() => import("./games/bouncing-ball/BouncingBall.jsx")),
   },
+  {
+    id: "road-dash",
+    title: "Road Dash",
+    description:
+      "A 3-lane dodging sprint. Drive up an endless road, weaving between slower cars and rocks — hop left and right to thread the gaps. It only gets faster; one crash ends the run.",
+    accent: "#38bdf8",
+    Component: lazy(() => import("./games/road-dash/RoadDash.jsx")),
+  },
 ];
 
 export const gameById = (id: string | undefined) =>
