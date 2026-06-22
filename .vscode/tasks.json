@@ -11,12 +11,17 @@
       "options": {
         "cwd": "${workspaceFolder}/apps/web"
       },
-      // Ensure the Node install dir is on PATH even if VSCode's terminal has a
-      // stale PATH (e.g. Node was installed after VSCode launched). Harmless
-      // once PATH is correct. Adjust the path if Node is installed elsewhere.
+      // Run under PowerShell (not the default Git Bash) so we don't depend on
+      // Git Bash's PATH conversion, and prepend the Node install dir on PATH in
+      // case VSCode's environment is stale (e.g. Node was installed after
+      // VSCode launched). Adjust the path if Node is installed elsewhere.
       "windows": {
         "options": {
           "cwd": "${workspaceFolder}/apps/web",
+          "shell": {
+            "executable": "powershell.exe",
+            "args": ["-NoProfile", "-Command"]
+          },
           "env": {
             "PATH": "C:\\Program Files\\nodejs;${env:PATH}"
           }

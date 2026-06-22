@@ -37,6 +37,14 @@ export const games: GameModule[] = [
     accent: "#7fd1a8",
     Component: lazy(() => import("./games/lost-fox/LostFox.jsx")),
   },
+  {
+    id: "bouncing-ball",
+    title: "Bouncing Ball",
+    description:
+      "A reaction sprint. A ball ricochets inside a square — click it to score: every hit flips its color, fires it off a new way, and speeds it up. How many in 30 seconds?",
+    accent: "#7dd3fc",
+    Component: lazy(() => import("./games/bouncing-ball/BouncingBall.jsx")),
+  },
 ];
 
 export const gameById = (id: string | undefined) =>
